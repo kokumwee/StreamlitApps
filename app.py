@@ -33,34 +33,17 @@ weekly_data = data.groupby(['game', 'monday_of_week']).agg(
     ).reset_index().round({'NFTs_Sold': 2, 'Sales_volume': 2, 'Unique_buyers': 2}).sort_values(by='game', ascending=False)
 
 weekly_data_table = weekly_data.loc[weekly_data.monday_of_week=='2023-08-21'][['game', 'NFTs_Sold', 'Sales_volume', 'Unique_buyers']]
-# display_1 = weekly_data.loc[weekly_data['game'].isin(options)][['game', 'NFTs_Sold', 'Sales_volume', 'Unique_buyers']]
-
-# st.markdown("### Weekly Data View")
-# st.dataframe(display_1)
-
-
-
-
-
 
 
 ### ------- filtered data plots 
 
-# filterd_data = data[data["game"].isin(Game_selector)]
-# filterd_weekly_data = weekly_data[weekly_data["game"].isin(Game_selector)]
-# filterd_weekly_data['monday_of_week'] = filterd_weekly_data['monday_of_week'].dt.date
-# filterd_weekly_data = filterd_weekly_data.sort_values(by="monday_of_week")
 
-
-tab1, tab2, tab3 = st.tabs(["Summary", "Game comparison", "Collection comparison"])
+tab1, tab2, tab3 = st.tabs(["Summary", "Game comparison", "Collection Sales"])
 
 with tab1:
     st.header("Sales data")
 
     st.markdown("### Last week Sales")
-#    weekly_data_display, plot_game_sales = st.columns(2)
-   
-#    with weekly_data_display:
 
     st.dataframe(weekly_data_table)
 
@@ -68,6 +51,7 @@ with tab1:
     st.markdown("---")
     st.markdown("### Weekly sales trend")
 
+    # sns.set_style("darkgrid")
     fig_2 = sns.relplot(x="monday_of_week", y="value_per_nft_USD",
         hue="game",
         data=data,  
@@ -91,7 +75,9 @@ with tab2:
     Game_selector = st.multiselect(
     'Select Games',
     list(pd.unique(data["game"])),
-    ['Apeiron'])
+    [data.game.iloc[0]]
+    # ['Apeiron']
+    )
 
 
     # filter dataset based on selector 
@@ -106,109 +92,85 @@ with tab2:
 
         st.markdown("### Number of NFTs sold")
         fig_1 = px.line(filterd_weekly_data, x="monday_of_week", y="NFTs_Sold",color="game")
+        fig_1.update_layout(autosize=False
+                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4))
         st.write(fig_1)
 
     with col_2:
 
         st.markdown("### Weekly Sales Volume")
         fig_2 = px.line(filterd_weekly_data, x="monday_of_week", y="Sales_volume",color="game")
+        fig_2.update_layout(autosize=False
+                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4))
         st.write(fig_2)
  
     with col_3:
 
         st.markdown("### Weekly unique buyer count")
         fig_3 = px.line(filterd_weekly_data, x="monday_of_week", y="Unique_buyers",color="game")
+        fig_3.update_layout(autosize=False
+                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4))
         st.write(fig_3)
 
 
 
 with tab3:
-   st.header("Collection comparison")
+
+    st.header("Collection sales")
+
+
+    col_4, col_5, col_6 = st.columns(3)
+
+    with col_4:
+
+        # Game_selector_2 = st.multiselect(
+        # 'Select Game Name',
+        # list(pd.unique(data["game"])),
+        # [data.game.iloc[0]])
+
+        Game_selector_2 = st.selectbox(
+                'Chose Game (One game)',
+                list(pd.unique(data["game"])))
+
+        
+    with col_5:
+        collection_data_for_game = data[data["game"]==Game_selector_2]
+
+        multi_collection = st.toggle('Multi collections')
+
+        if multi_collection:
+            Collection_selector_2 = st.multiselect(
+            'Chose collections',
+            list(pd.unique(collection_data_for_game["collection_name"])),
+            [collection_data_for_game.collection_name.iloc[0]])
+            token_data_for_collection = collection_data_for_game[collection_data_for_game["collection_name"].isin(Collection_selector_2)]
+
+        else: 
+            Collection_selector_2 = st.selectbox(
+            'Chose Collection',
+            list(pd.unique(collection_data_for_game["collection_name"])))
+            token_data_for_collection = collection_data_for_game[collection_data_for_game["collection_name"]==  Collection_selector_2]
+ 
+    with col_6:
+        
+        token_selections = st.toggle('Pick Tokens')
+        if token_selections:
+            
+            token_selector_2 = st.multiselect(
+            'Select tokens',
+            list(pd.unique(token_data_for_collection["nft_token_id"])),
+            [token_data_for_collection.nft_token_id.iloc[0]])
+            token_data_for_collection = token_data_for_collection[token_data_for_collection["nft_token_id"].isin(token_selector_2)]
+
+    st.markdown("---")
+    st.markdown("### Sales summary")
+
+    col1, col2, col3, col_4, col_5, col_6 = st.columns(6)
+    col1.metric(label="NFTs Sold", value=token_data_for_collection.nft_token_id.count())
+    col1.metric(label="Unique NFTs Sold", value=token_data_for_collection.nft_token_id.nunique())
 
 
 
-
-
-# with weekly_data_display:
-#     st.dataframe(filterd_weekly_data)
-
-
-# with plot_game_sales:
-    # st.line_chart(data = filterd_weekly_data, x="monday_of_week", y="NFTs_Sold", color = 'game')
-
-    # fig = plt.figure(figsize=(10, 4))
-    # sns.lineplot(data=filterd_weekly_data, x="monday_of_week", y="NFTs_Sold", hue = 'game')
-
-    # fig = px.line(filterd_weekly_data, x="monday_of_week", y="NFTs_Sold",color="game")
-    
-    # ax.set(ylim=(0, weekly_data.NFTs_Sold.max()))
-    # ax.set_xlabel('Week')
-    # ax.set_ylabel('Tokens sold')
-    # ax.tick_params(labelrotation=45)
-    # st.write(fig)
-    # st.pyplot(fig)
-
-    # fig = sns.relplot(x="monday_of_week", y="value_per_nft_USD",
-    #         hue="game",
-    #         data=filterd_data,  
-    #         col="game",  
-    #         kind="line", 
-    #         errorbar = 'sd',
-    #         col_wrap=2, 
-    #         legend=False)
-
-    # fig.set(ylim=(0, 1400))
-    # fig.set_xlabels('Week')
-    # fig.set_ylabels('Sales Price (USD)')
-    # fig.tick_params(labelrotation=45)
-    # st.pyplot(fig)
-
-# with plot_weekly_sales_volume:
-#     # fig_2 = sns.relplot(x="monday_of_week", y="value_per_nft_USD",
-#     #         hue="game",
-#     #         data=filterd_data,  
-#     #         col="game",  
-#     #         kind="line", 
-#     #         errorbar = 'sd',
-#     #         col_wrap=2, 
-#     #         legend=False)
-#     fig_2 = sns.lineplot(data=filterd_weekly_data, x="monday_of_week", y="Sales_volume", color = 'Green')
-#     # fig_2.set(ylim=(0, 1400))
-#     # fig_2.set_xlabels('Week')
-#     # fig_2.set_ylabels('Sales Price (USD)')
-#     # fig_2.tick_params(labelrotation=45)
-#     st.pyplot(fig_2)
-
-
-    # fig_2 = sns.lineplot(data=weekly_data, x="monday_of_week", y="Sales_volume", color = 'Green')
-
-    # fig_2.set(ylim=(0, weekly_data.Sales_volume.max()))
-    # fig_2.set_xlabel('Week')
-    # fig_2.set_ylabel('Sales volume (USD)')
-    # fig_2.tick_params(labelrotation=45)
-    # st.pyplot(fig_2)
-
-
-
-
-
-
-# progress_bar = st.sidebar.progress(0)
-# status_text = st.sidebar.empty()
-# last_rows = np.random.randn(1, 1)
-# chart = st.line_chart(last_rows)
-
-# for i in range(1, 101):
-#     new_rows = last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
-#     status_text.text("%i%% Complete" % i)
-#     chart.add_rows(new_rows)
-#     progress_bar.progress(i)
-#     last_rows = new_rows
-
-
-# progress_bar.empty()
-
-# Streamlit widgets automatically run the script from top to bottom. Since
-# this button is not connected to any other logic, it just causes a plain
-# rerun.
-# st.button("Re-run")
+    col3.metric(label="Mean Price", value=token_data_for_collection.value_per_nft_USD.mean().round(2))
+    col3.metric(label="Floor Price", value=token_data_for_collection.value_per_nft_USD.min().round(2))
+    col3.metric(label="Price StDev", value=token_data_for_collection.value_per_nft_USD.std().round(2))
