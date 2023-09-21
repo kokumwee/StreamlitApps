@@ -211,7 +211,8 @@ with tab4:
 
         fig_gi_event = px.line(weekly_gi_events, x="week_start", y="Unique_users", color='event')
         fig_gi_event.update_layout(autosize=False
-                             ,width=1000,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4), xaxis_title="Week")
+                             ,width=1000,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4), xaxis_title="Week", yaxis_title="unique users"
+        , yaxis=dict(range=[0,weekly_gi_events.Unique_users.max()]))
         st.write(fig_gi_event)
 
     
