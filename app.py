@@ -14,9 +14,23 @@ st.set_page_config(
     layout="wide",
 )
 
-# sample data
+# sample sales data
 data = pd.read_csv('gamesync_sales_data_transformed.csv').iloc[:,1:]
 data['monday_of_week']=pd.to_datetime(data['monday_of_week'])
+
+# sample game interaction data
+gi_data = pd.read_csv('gi_data_transformed.csv').iloc[:,1:]
+weekly_gi_events = gi_data.groupby(['event', 'week_start']).agg(
+    total_interactions=('player_address', 'count'),
+    Unique_users=('player_address', 'nunique'),
+    ).reset_index().round({'total_interactions': 2, 'Unique_users': 2}).sort_values(by='week_start', ascending=True)
+
+weekly_gi_game = gi_data.groupby(['week_start']).agg(
+    total_interactions=('player_address', 'count'),
+    Unique_users=('player_address', 'nunique'),
+    ).reset_index().round({'total_interactions': 2, 'Unique_users': 2}).sort_values(by='week_start', ascending=True)
+
+
 
 # dashboard title
 st.title("Game Collection Dashboard")
@@ -38,12 +52,15 @@ weekly_data_table = weekly_data.loc[weekly_data.monday_of_week=='2023-08-21'][['
 ### ------- filtered data plots 
 
 
-tab1, tab2, tab3 = st.tabs(["Summary", "Game comparison", "Collection Sales"])
+tab1, tab2, tab3, tab4 = st.tabs(["Sales Summary", "Game sales comparison", "Collection Sales", "Game interactions"])
 
 with tab1:
     st.header("Sales data")
-
+    st.markdown("Past weeks sales for each game + sales trends week on week with mean sales price, floor and ceiling")
+    
     st.markdown("### Last week Sales")
+
+    
 
     st.dataframe(weekly_data_table)
 
@@ -70,6 +87,7 @@ with tab1:
 
 with tab2:
     st.header("Game comparison")
+    st.markdown("Select games to compare sales")
 
     # Game filter 
     Game_selector = st.multiselect(
@@ -93,7 +111,7 @@ with tab2:
         st.markdown("### Number of NFTs sold")
         fig_1 = px.line(filterd_weekly_data, x="monday_of_week", y="NFTs_Sold",color="game")
         fig_1.update_layout(autosize=False
-                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4))
+                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4), xaxis_title="Week")
         st.write(fig_1)
 
     with col_2:
@@ -101,7 +119,7 @@ with tab2:
         st.markdown("### Weekly Sales Volume")
         fig_2 = px.line(filterd_weekly_data, x="monday_of_week", y="Sales_volume",color="game")
         fig_2.update_layout(autosize=False
-                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4))
+                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4), xaxis_title="Week")
         st.write(fig_2)
  
     with col_3:
@@ -109,7 +127,7 @@ with tab2:
         st.markdown("### Weekly unique buyer count")
         fig_3 = px.line(filterd_weekly_data, x="monday_of_week", y="Unique_buyers",color="game")
         fig_3.update_layout(autosize=False
-                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4))
+                            ,width=500,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4), xaxis_title="Week")
         st.write(fig_3)
 
 
@@ -117,7 +135,7 @@ with tab2:
 with tab3:
 
     st.header("Collection sales")
-
+    st.markdown("Select a game and collection to view sales numbers. Enable toggle to drill down into collections and individual tokens.")
 
     col_4, col_5, col_6 = st.columns(3)
 
@@ -174,3 +192,29 @@ with tab3:
     col3.metric(label="Mean Price", value=token_data_for_collection.value_per_nft_USD.mean().round(2))
     col3.metric(label="Floor Price", value=token_data_for_collection.value_per_nft_USD.min().round(2))
     col3.metric(label="Price StDev", value=token_data_for_collection.value_per_nft_USD.std().round(2))
+    # st.metric(label="NFTs Sold", value=token_data_for_collection.nft_token_id.count())
+
+
+with tab4:
+
+    st.header("Game interactions - GFC")
+    st.markdown("On-chain interactions for game play. GFC only at the moment")
+
+    combine_interactions = st.toggle('combine interactions', value=True)
+    if combine_interactions:
+        fig_gi_game = px.line(weekly_gi_game, x="week_start", y="Unique_users")
+        fig_gi_game.update_layout(autosize=False
+                             ,width=1000,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4), xaxis_title="Week", yaxis_title="unique users"
+        , yaxis=dict(range=[0,weekly_gi_game.Unique_users.max()]))
+        st.write(fig_gi_game)
+    else: 
+
+        fig_gi_event = px.line(weekly_gi_events, x="week_start", y="Unique_users", color='event')
+        fig_gi_event.update_layout(autosize=False
+                             ,width=1000,height=500,margin=dict(l=50,r=50,b=25,t=25,pad=4), xaxis_title="Week")
+        st.write(fig_gi_event)
+
+    
+
+
+   
